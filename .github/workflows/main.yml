@@ -1,0 +1,48 @@
+name: Lint and Test
+
+on:
+  push:
+    branches: 
+      - master
+      - release/*
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.12
+          
+      - name: Check out code
+        uses: actions/checkout@v1
+      - name: Lint Go Code
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go get -u golang.org/x/lint/golint
+          golint -set_exit_status $(go list github.com/lujinda/testmod/...)
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.12
+      - name: Check out Code
+        uses: actions/checkout@v1
+        
+      - name: Run Unit tests.
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go test -short -coverprofile cover.out -covermode=atomic $(go list github.com/lujinda/testmod/...)
+          cat cover.out >> coverage.txt
+        
+      - name: Upload Coverage report to CodeCov
+        uses: codecov/codecov-action@v1.0.0
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
+          file: ./coverage.txt
